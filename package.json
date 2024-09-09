@@ -2,7 +2,11 @@
   "name": "previewsvg",
   "displayName": "PreviewSVG",
   "description": "preview svg",
-  "version": "0.0.1",
+  "version": "0.0.2",
+  "publisher": "panjy",
+  "author": "panjy",
+  "repository": "https://github.com/pan-jy/previewSVG",
+  "icon": "public/icon.jpg",
   "engines": {
     "vscode": "^1.93.0"
   },
