@@ -1,71 +1,41 @@
-# previewsvg README
+# Preview SVG In VSCode
 
-This is the README for your extension "previewsvg". After writing up a brief description, we recommend including the following sections.
+在 VSCode 中预览 SVG 文件、SVG 代码片段。
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+支持 `svg` 文件、`tsx` 文件的以下预览功能：
 
-For example if there is an image subfolder under your extension project workspace:
++ 菜单栏—预览 svg 文件
++ 菜单栏—预览选中 svg 内容
++ 悬浮预览光标所在 svg
 
-\!\[feature X\]\(images/feature-x.png\)
+## Commands
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
++ `Preview SVG File`: 在新窗口中预览 svg 文件
++ `Preview Selection SVG`: 在新窗口中预览 选中的 svg 内容
 
-## Requirements
+## Usage
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+1. 安装插件
 
-## Extension Settings
+2. 打开 `svg` 或 `tsx` 文件
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+3. 预览
 
-For example:
+   1. 右键菜单预览
 
-This extension contributes the following settings:
+      ![menus.png](https://github.com/pan-jy/previewSVG/blob/master/public/menus.png)
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+   2. 悬浮预览
 
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
+      ![hover.png](https://github.com/pan-jy/previewSVG/blob/master/public/hover.png)
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+2021-09-09 发布基本功能
 
 ---
 
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
