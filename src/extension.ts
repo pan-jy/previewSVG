@@ -35,7 +35,7 @@ function openPreviewPanel() {
   const panel = vscode.window.createWebviewPanel(
     "previewSVG",
     "Preview SVG",
-    vscode.ViewColumn.One,
+    vscode.ViewColumn.Two,
     {}
   );
   return panel;
@@ -74,13 +74,17 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   // 鼠标悬浮预览选中的 SVG 内容
-  vscode.languages.registerHoverProvider("*", {
+  vscode.languages.registerHoverProvider(["typescriptreact", "xml"], {
     provideHover(doc: vscode.TextDocument, position: vscode.Position) {
       let svgText = "";
       let startLine, endLine;
       // 从当前行开始向上查找，直到找到 svg 标签, 以此作为起始行
       for (startLine = position.line; startLine >= 0; startLine--) {
         const lineText = doc.lineAt(startLine).text;
+        // 如果先找到结束标签，则直接返回
+        if (lineText.includes("</svg>")) {
+          return;
+        }
         if (lineText.includes("<svg")) {
           break;
         }
