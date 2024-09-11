@@ -1,14 +1,24 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
+import * as path from "path";
 
 class PreviewSVG {
+  webviewTemplate = "";
+  extensionPath: string;
+
+  constructor(extensionPath: string) {
+    this.extensionPath = extensionPath;
+  }
+
   private openPreviewPanel() {
     const panel = vscode.window.createWebviewPanel(
       "previewSVG",
       "Preview SVG",
       vscode.ViewColumn.Two,
-      {}
+      {
+        enableScripts: true,
+      }
     );
     return panel;
   }
@@ -17,7 +27,7 @@ class PreviewSVG {
     return new RegExp(/^<svg.*>.*<\/svg>$/, "s").test(text);
   }
 
-  extractSVGFromText(text: string) {
+  private extractSVGFromText(text: string) {
     const startIndex = text.indexOf("<svg");
     const endIndex = text.indexOf("</svg>") + 6;
     const svgText = text.substring(startIndex, endIndex).trim();
@@ -29,6 +39,44 @@ class PreviewSVG {
       startIndex,
       endIndex,
     };
+  }
+
+  private getSVGFileContent() {
+    const editor = vscode.window.activeTextEditor;
+    const text = editor?.document.getText().trim() ?? "";
+
+    if (this.isSVG(text)) {
+      return text;
+    }
+  }
+
+  private getActiveSVG() {
+    const editor = vscode.window.activeTextEditor;
+    const activeLine = editor?.selection.active.line;
+    if (!editor?.document || activeLine === undefined) {
+      return;
+    }
+    const { svgText } = this.findSVGInDoc(editor?.document, activeLine) ?? {};
+    return svgText;
+  }
+
+  private getSVGFromSelection() {
+    const editor = vscode.window.activeTextEditor;
+    const selection = editor?.selection;
+    const text = editor?.document.getText(selection) ?? "";
+    return this.extractSVGFromText(text)?.svgText;
+  }
+
+  private async getWebviewContent(svgText: string) {
+    if (!this.webviewTemplate) {
+      const templatePath = vscode.Uri.file(
+        path.join(this.extensionPath, "src", "webview.html")
+      );
+      const template = vscode.workspace.fs.readFile(templatePath);
+      this.webviewTemplate = (await template).toString();
+    }
+
+    return this.webviewTemplate.replace("{{svg}}", svgText);
   }
 
   findSVGInDoc(doc: vscode.TextDocument, start: number) {
@@ -84,55 +132,25 @@ class PreviewSVG {
     return { svgText, startLine, endLine, startIndex, endIndex };
   }
 
-  private getSVGFileContent() {
-    const editor = vscode.window.activeTextEditor;
-    const text = editor?.document.getText().trim() ?? "";
-
-    if (this.isSVG(text)) {
-      return text;
-    }
-  }
-
-  private getActiveSVG() {
-    const editor = vscode.window.activeTextEditor;
-    const activeLine = editor?.selection.active.line;
-    if (!editor?.document || activeLine === undefined) {
-      return;
-    }
-    const { svgText } = this.findSVGInDoc(editor?.document, activeLine) ?? {};
-    return svgText;
-  }
-
-  private getSVGFromSelection() {
-    const editor = vscode.window.activeTextEditor;
-    const selection = editor?.selection;
-    const text = editor?.document.getText(selection) ?? "";
-    return this.extractSVGFromText(text)?.svgText;
-  }
-
-  private getWebviewContent(svgText?: string) {
-    return `<!DOCTYPE html>
-            <html lang="en">
-              <head>
-                <meta charset="UTF-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                <title>Preview SVG</title>
-              </head>
-              <body>${svgText ?? "SVG not found"}</body>
-            </html>`;
-  }
-
-  previewSVGFile() {
-    const panel = this.openPreviewPanel();
+  async previewSVGFile() {
     const svgText = this.getSVGFileContent();
-    const content = this.getWebviewContent(svgText);
+    if (!svgText) {
+      return vscode.window.showErrorMessage("No SVG found in this file");
+    }
+    const panel = this.openPreviewPanel();
+    const content = await this.getWebviewContent(svgText);
     panel.webview.html = content;
   }
 
-  previewActiveSVG() {
-    const panel = this.openPreviewPanel();
+  async previewActiveSVG() {
     const svgText = this.getActiveSVG();
-    const content = this.getWebviewContent(svgText);
+    if (!svgText) {
+      return vscode.window.showErrorMessage(
+        "Mouse is not focused inside SVG",
+      );
+    }
+    const panel = this.openPreviewPanel();
+    const content = await this.getWebviewContent(svgText);
     panel.webview.html = content;
   }
 }
@@ -144,7 +162,7 @@ export function activate(context: vscode.ExtensionContext) {
   // This line of code will only be executed once when your extension is activated
   console.log('Your extension "PreviewSVG" is now active!');
 
-  const previewSVG = new PreviewSVG();
+  const previewSVG = new PreviewSVG(context.extensionPath);
 
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with registerCommand
