@@ -12,7 +12,7 @@ class PreviewSVG {
   }
 
   private openPreviewPanel() {
-    const panel = vscode.window.createWebviewPanel(
+    return vscode.window.createWebviewPanel(
       "previewSVG",
       "Preview SVG",
       vscode.ViewColumn.Two,
@@ -20,7 +20,6 @@ class PreviewSVG {
         enableScripts: true,
       }
     );
-    return panel;
   }
 
   private isSVG(text: string) {
@@ -30,10 +29,11 @@ class PreviewSVG {
   private extractSVGFromText(text: string) {
     const startIndex = text.indexOf("<svg");
     const endIndex = text.indexOf("</svg>") + 6;
-    const svgText = text.substring(startIndex, endIndex).trim();
+    let svgText = text.substring(startIndex, endIndex).trim();
     if (!this.isSVG(svgText)) {
       return;
     }
+    svgText = this.formatSVG(svgText); // 格式化 svg 文本
     return {
       svgText,
       startIndex,
@@ -79,6 +79,17 @@ class PreviewSVG {
     return this.webviewTemplate.replace("{{svg}}", svgText);
   }
 
+  private formatSVG(svgText: string) {
+    // 将 style={{ ... }} 转换为 style="..."
+    svgText = svgText.replace(
+      /style={{\s?(.*?)\s?}}/g,
+      (_, $1) => `style="${$1}"`
+    );
+    // 将驼峰转换为中划线
+    // svgText = svgText.replace(/([A-Z])/g, "-$1").toLowerCase();
+    return svgText;
+  }
+
   findSVGInDoc(doc: vscode.TextDocument, start: number) {
     let startLine,
       endLine,
@@ -120,13 +131,7 @@ class PreviewSVG {
     }
     const { startIndex, endIndex } = extractRes;
     svgText = extractRes.svgText;
-    // 将 style={{ ... }} 转换为 style="..."
-    svgText = svgText.replace(
-      /style={{\s?(.*?)\s?}}/g,
-      (_, $1) => `style="${$1}"`
-    );
-    // 将驼峰转换为中划线
-    // svgText = svgText.replace(/([A-Z])/g, "-$1").toLowerCase();
+
     console.log(svgText);
 
     return { svgText, startLine, endLine, startIndex, endIndex };
@@ -145,9 +150,7 @@ class PreviewSVG {
   async previewActiveSVG() {
     const svgText = this.getActiveSVG();
     if (!svgText) {
-      return vscode.window.showErrorMessage(
-        "Mouse is not focused inside SVG",
-      );
+      return vscode.window.showErrorMessage("Mouse is not focused inside SVG");
     }
     const panel = this.openPreviewPanel();
     const content = await this.getWebviewContent(svgText);
