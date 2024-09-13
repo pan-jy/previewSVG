@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import * as path from "path";
-import { SVGStandardAttrMap } from "./data";
+import { StopWords, SVGStandardAttrMap } from "./data";
 
 class PreviewSVG {
   webviewTemplate = "";
@@ -71,7 +71,7 @@ class PreviewSVG {
   private async getWebviewContent(svgText: string) {
     if (!this.webviewTemplate) {
       const templatePath = vscode.Uri.file(
-        path.join(this.extensionPath, "src", "webview.html")
+        path.join(this.extensionPath, "public", "webview.html")
       );
       const template = vscode.workspace.fs.readFile(templatePath);
       this.webviewTemplate = (await template).toString();
@@ -100,9 +100,11 @@ class PreviewSVG {
     // 从当前行开始向上查找，直到找到 svg 标签, 以此作为起始行
     for (startLine = start; startLine >= 0; startLine--) {
       const lineText = doc.lineAt(startLine).text;
-      // 如果先找到结束标签，则直接返回
-      if (lineText.includes("</svg>")) {
-        return;
+      // 如果先找到结束特定字符，则直接返回
+      for (const word of StopWords) {
+        if (lineText.includes(word)) {
+          return;
+        }
       }
       if (lineText.includes("<svg")) {
         break;
