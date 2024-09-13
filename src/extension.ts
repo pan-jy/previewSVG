@@ -71,7 +71,7 @@ class PreviewSVG {
   private async getWebviewContent(svgText: string) {
     if (!this.webviewTemplate) {
       const templatePath = vscode.Uri.file(
-        path.join(this.extensionPath, "src", "webview.html")
+        path.join(this.extensionPath, 'public', "webview.html")
       );
       const template = vscode.workspace.fs.readFile(templatePath);
       this.webviewTemplate = (await template).toString();
