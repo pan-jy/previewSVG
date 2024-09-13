@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import * as path from "path";
+import { SVGStandardAttrMap } from "./data";
 
 class PreviewSVG {
   webviewTemplate = "";
@@ -85,8 +86,10 @@ class PreviewSVG {
       /style={{\s?(.*?)\s?}}/g,
       (_, $1) => `style="${$1}"`
     );
-    // 将驼峰转换为中划线
-    // svgText = svgText.replace(/([A-Z])/g, "-$1").toLowerCase();
+    // 将驼峰式的属性名转换为标准属性名
+    svgText = svgText.replace(/[a-z|A-z]+[A-Z][a-z|A-z]+(?==)/g, (attrName) => {
+      return SVGStandardAttrMap[attrName] ?? attrName;
+    });
     return svgText;
   }
 
