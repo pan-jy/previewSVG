@@ -25,13 +25,13 @@
 
    1. 右键菜单预览
 
-      ![menus.png](https://github.com/pan-jy/previewSVG/blob/master/public/menus.png)
+      ![menus.png](./public/menus.png)
 
-      ![menus.png](https://github.com/pan-jy/previewSVG/blob/master/public/webview.png)
+      ![menus.png](./public/webview.png)
 
    2. 悬浮预览
 
-      ![hover.png](https://github.com/pan-jy/previewSVG/blob/master/public/hover.png)
+      ![hover.png](./public/hover.png)
 
 ## Release Notes
 
