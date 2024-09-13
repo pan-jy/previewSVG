@@ -100,6 +100,10 @@ class PreviewSVG {
     // 从当前行开始向上查找，直到找到 svg 标签, 以此作为起始行
     for (startLine = start; startLine >= 0; startLine--) {
       const lineText = doc.lineAt(startLine).text;
+      // 如果查找到 svg 结束标签，并且起始行不是当前行，则直接返回
+      if (lineText.includes("</svg>") && startLine !== start) {
+        return;
+      }
       // 如果先找到结束特定字符，则直接返回
       for (const word of StopWords) {
         if (lineText.includes(word)) {
