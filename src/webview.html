@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Preview SVG</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        padding: 16px;
+      }
+
+      #svg-container {
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: white;
+      }
+
+      section {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 20px;
+      }
+
+      span {
+        user-select: none;
+        font-size: 18px;
+        display: flex;
+        width: 108px;
+        justify-content: flex-end;
+      }
+
+      #colorInput {
+        width: 100px;
+        height: 40px;
+      }
+
+      button {
+        width: 40px;
+        height: 40px;
+        font-size: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px;
+        color: white;
+      }
+
+      .resetBtn {
+        width: 80px;
+        font-size: 16px;
+        background-color: #007bff;
+      }
+      .resetBtn:hover {
+        background-color: #006de1;
+      }
+      .resetBtn:active {
+        background-color: #005fbf;
+      }
+
+      #magnifyBtn {
+        background-color: #28a745;
+        color: white;
+      }
+      #magnifyBtn:hover {
+        background-color: #218838;
+      }
+      #magnifyBtn:active {
+        background-color: #1e7e34;
+      }
+
+      #shrinkBtn {
+        background-color: #dc3545;
+      }
+      #shrinkBtn:hover {
+        background-color: #c82333;
+      }
+      #shrinkBtn:active {
+        background-color: #bd2130;
+      }
+
+      button:disabled {
+        background-color: #6c757d !important;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="bgc-picker">
+      <span>背景色选择：</span>
+      <input id="colorInput" type="color" value="#ffffff" />
+      <button class="resetBtn" id="resetColorBtn">重置</button>
+    </section>
+    <section class="size-controller">
+      <span> 大小控制：</span>
+      <button id="magnifyBtn">+</button>
+      <button id="shrinkBtn">-</button>
+      <button class="resetBtn" id="resetSizeBtn">重置</button>
+    </section>
+
+    <section id="svg-container">{{svg}}</section>
+    <script>
+      const colorInput = document.getElementById("colorInput");
+      const svgContainer = document.getElementById("svg-container");
+      const resetColorBtn = document.getElementById("resetColorBtn");
+
+      const { clientWidth: width, clientHeight: height } = svgContainer;
+
+      colorInput.addEventListener("input", (e) => {
+        const color = e.target.value;
+        svgContainer.style.backgroundColor = color;
+      });
+
+      resetColorBtn.addEventListener("click", () => {
+        svgContainer.style.backgroundColor = "#ffffff";
+        colorInput.value = "#ffffff";
+      });
+
+      const magnifyBtn = document.getElementById("magnifyBtn");
+      const shrinkBtn = document.getElementById("shrinkBtn");
+      const resetSizeBtn = document.getElementById("resetSizeBtn");
+      const SVGElem = svgContainer.querySelector("svg");
+
+      let curScale = 1;
+      magnifyBtn.addEventListener("click", () => {
+        curScale += 0.1;
+        SVGElem.style.transform = `scale(${curScale})`;
+        svgContainer.style.height = `${height * curScale}px`;
+        if (shrinkBtn.disabled) shrinkBtn.disabled = false;
+        if (curScale === 2) {
+          magnifyBtn.disabled = true;
+        }
+      });
+
+      shrinkBtn.addEventListener("click", () => {
+        curScale -= 0.1;
+        curScale = Math.max(0.1, curScale);
+        SVGElem.style.transform = `scale(${curScale})`;
+        svgContainer.style.height = `${height * curScale}px`;
+        if (magnifyBtn.disabled) magnifyBtn.disabled = false;
+        if (curScale === 0.1) {
+          shrinkBtn.disabled = true;
+        }
+      });
+
+      resetSizeBtn.addEventListener("click", () => {
+        curScale = 1;
+        SVGElem.style.transform = `scale(${curScale})`;
+        svgContainer.style.height = `${height}px`;
+      });
+    </script>
+  </body>
+</html>

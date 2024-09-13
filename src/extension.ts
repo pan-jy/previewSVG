@@ -1,44 +1,164 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
+import * as path from "path";
+import { SVGStandardAttrMap } from "./data";
 
-function getSVGFileContent() {
-  const editor = vscode.window.activeTextEditor;
-  const text = editor?.document.getText() ?? "";
-  const isSVG = new RegExp(/<svg.*>.*<\/svg>/, "s").test(text);
+class PreviewSVG {
+  webviewTemplate = "";
+  extensionPath: string;
 
-  return isSVG ? text : "No SVG found in the editor";
-}
+  constructor(extensionPath: string) {
+    this.extensionPath = extensionPath;
+  }
 
-function getSVGSelectionContent() {
-  const editor = vscode.window.activeTextEditor;
-  const selection = editor?.selection;
-  const text = editor?.document.getText(selection) ?? "";
-  const isSVG = new RegExp(/<svg.*>.*<\/svg>/, "s").test(text);
+  private openPreviewPanel() {
+    return vscode.window.createWebviewPanel(
+      "previewSVG",
+      "Preview SVG",
+      vscode.ViewColumn.Two,
+      {
+        enableScripts: true,
+      }
+    );
+  }
 
-  return isSVG ? text : "No SVG found in the selection";
-}
+  private isSVG(text: string) {
+    return new RegExp(/^<svg.*>.*<\/svg>$/, "s").test(text);
+  }
 
-function getWebviewContent(svg: string) {
-  return `<!DOCTYPE html>
-						<html lang="en">
-							<head>
-								<meta charset="UTF-8" />
-								<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-								<title>Preview SVG</title>
-							</head>
-							<body>${svg}</body>
-						</html>`;
-}
+  private extractSVGFromText(text: string) {
+    const startIndex = text.indexOf("<svg");
+    const endIndex = text.indexOf("</svg>") + 6;
+    let svgText = text.substring(startIndex, endIndex).trim();
+    if (!this.isSVG(svgText)) {
+      return;
+    }
+    svgText = this.formatSVG(svgText); // 格式化 svg 文本
+    return {
+      svgText,
+      startIndex,
+      endIndex,
+    };
+  }
 
-function openPreviewPanel() {
-  const panel = vscode.window.createWebviewPanel(
-    "previewSVG",
-    "Preview SVG",
-    vscode.ViewColumn.One,
-    {}
-  );
-  return panel;
+  private getSVGFileContent() {
+    const editor = vscode.window.activeTextEditor;
+    const text = editor?.document.getText().trim() ?? "";
+
+    if (this.isSVG(text)) {
+      return text;
+    }
+  }
+
+  private getActiveSVG() {
+    const editor = vscode.window.activeTextEditor;
+    const activeLine = editor?.selection.active.line;
+    if (!editor?.document || activeLine === undefined) {
+      return;
+    }
+    const { svgText } = this.findSVGInDoc(editor?.document, activeLine) ?? {};
+    return svgText;
+  }
+
+  private getSVGFromSelection() {
+    const editor = vscode.window.activeTextEditor;
+    const selection = editor?.selection;
+    const text = editor?.document.getText(selection) ?? "";
+    return this.extractSVGFromText(text)?.svgText;
+  }
+
+  private async getWebviewContent(svgText: string) {
+    if (!this.webviewTemplate) {
+      const templatePath = vscode.Uri.file(
+        path.join(this.extensionPath, "src", "webview.html")
+      );
+      const template = vscode.workspace.fs.readFile(templatePath);
+      this.webviewTemplate = (await template).toString();
+    }
+
+    return this.webviewTemplate.replace("{{svg}}", svgText);
+  }
+
+  private formatSVG(svgText: string) {
+    // 将 style={{ ... }} 转换为 style="..."
+    svgText = svgText.replace(
+      /style={{\s?(.*?)\s?}}/g,
+      (_, $1) => `style="${$1}"`
+    );
+    // 将驼峰式的属性名转换为标准属性名
+    svgText = svgText.replace(/[a-z|A-z]+[A-Z][a-z|A-z]+(?==)/g, (attrName) => {
+      return SVGStandardAttrMap[attrName] ?? attrName;
+    });
+    return svgText;
+  }
+
+  findSVGInDoc(doc: vscode.TextDocument, start: number) {
+    let startLine,
+      endLine,
+      svgText = "";
+    // 从当前行开始向上查找，直到找到 svg 标签, 以此作为起始行
+    for (startLine = start; startLine >= 0; startLine--) {
+      const lineText = doc.lineAt(startLine).text;
+      // 如果先找到结束标签，则直接返回
+      if (lineText.includes("</svg>")) {
+        return;
+      }
+      if (lineText.includes("<svg")) {
+        break;
+      }
+    }
+    // 从起始行开始向下查找，直到找到 svg 标签结束
+    for (endLine = startLine; endLine < doc.lineCount; endLine++) {
+      let lineText = doc.lineAt(endLine).text.trim();
+      // 跳过注释和空行
+      if (
+        !lineText ||
+        lineText.startsWith("<!--") ||
+        lineText.startsWith("//")
+      ) {
+        continue;
+      }
+      // 如果不是以 < 开头（属性），则添加一个空格
+      if (!lineText.startsWith("<")) {
+        lineText = " " + lineText;
+      }
+      svgText += lineText;
+      if (lineText.includes("</svg>")) {
+        break;
+      }
+    }
+    const extractRes = this.extractSVGFromText(svgText);
+    if (!extractRes) {
+      return;
+    }
+    const { startIndex, endIndex } = extractRes;
+    svgText = extractRes.svgText;
+
+    console.log(svgText);
+
+    return { svgText, startLine, endLine, startIndex, endIndex };
+  }
+
+  async previewSVGFile() {
+    const svgText = this.getSVGFileContent();
+    if (!svgText) {
+      return vscode.window.showErrorMessage("No SVG found in this file");
+    }
+    const panel = this.openPreviewPanel();
+    const content = await this.getWebviewContent(svgText);
+    panel.webview.html = content;
+  }
+
+  async previewActiveSVG() {
+    const svgText = this.getActiveSVG();
+    if (!svgText) {
+      return vscode.window.showErrorMessage("Mouse is not focused inside SVG");
+    }
+    const panel = this.openPreviewPanel();
+    const content = await this.getWebviewContent(svgText);
+    panel.webview.html = content;
+  }
 }
 
 // This method is called when your extension is activated
@@ -46,7 +166,9 @@ function openPreviewPanel() {
 export function activate(context: vscode.ExtensionContext) {
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   // This line of code will only be executed once when your extension is activated
-  console.log('Congratulations, your extension "previewsvg" is now active!');
+  console.log('Your extension "PreviewSVG" is now active!');
+
+  const previewSVG = new PreviewSVG(context.extensionPath);
 
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with registerCommand
@@ -54,71 +176,36 @@ export function activate(context: vscode.ExtensionContext) {
   const previewSVGFile = vscode.commands.registerCommand(
     "previewsvg.previewSVGFile",
     () => {
-      const panel = openPreviewPanel();
-      const svg = getSVGFileContent();
-      const content = getWebviewContent(svg);
-
-      panel.webview.html = content;
+      previewSVG.previewSVGFile();
     }
   );
 
-  const previewSelectionSVG = vscode.commands.registerCommand(
-    "previewsvg.previewSelectionSVG",
+  const previewActiveSVG = vscode.commands.registerCommand(
+    "previewsvg.previewActiveSVG",
     () => {
-      const panel = openPreviewPanel();
-      const svg = getSVGSelectionContent();
-      const content = getWebviewContent(svg);
-
-      panel.webview.html = content;
+      previewSVG.previewActiveSVG();
     }
   );
+
+  context.subscriptions.push(previewSVGFile);
+  context.subscriptions.push(previewActiveSVG);
 
   // 鼠标悬浮预览选中的 SVG 内容
-  vscode.languages.registerHoverProvider("*", {
+  vscode.languages.registerHoverProvider(["typescriptreact", "xml"], {
     provideHover(doc: vscode.TextDocument, position: vscode.Position) {
-      let svgText = "";
-      let startLine, endLine;
-      // 从当前行开始向上查找，直到找到 svg 标签, 以此作为起始行
-      for (startLine = position.line; startLine >= 0; startLine--) {
-        const lineText = doc.lineAt(startLine).text;
-        if (lineText.includes("<svg")) {
-          break;
-        }
-      }
-      // 从起始行开始向下查找，直到找到 svg 标签结束
-      for (endLine = startLine; endLine < doc.lineCount; endLine++) {
-        let lineText = doc.lineAt(endLine).text.trim();
-        // 跳过注释和空行
-        if (
-          lineText === "" ||
-          lineText.startsWith("<!--") ||
-          lineText.startsWith("//")
-        ) {
-          continue;
-        }
-        if (!lineText.startsWith("<")) {
-          lineText = " " + lineText;
-        }
-        svgText += lineText;
-        if (lineText.includes("</svg>")) {
-          break;
-        }
-      }
-      if (!svgText.includes("<svg") || !svgText.includes("</svg>")) {
+      const editor = vscode.window.activeTextEditor;
+      const activeLine = editor?.selection.active.line;
+      // 如果当前鼠标悬浮的行不是聚焦的行，则返回
+      if (activeLine !== position.line) {
         return;
       }
 
-      const startIndex = svgText.indexOf("<svg");
-      const endIndex = svgText.indexOf("</svg>") + 6;
-      svgText = svgText.substring(startIndex, endIndex).trim();
-      // 将 style={{ ... }} 转换为 style="..."
-      svgText = svgText.replace(
-        /style={{\s?(.*?)\s?}}/g,
-        (_, $1) => `style="${$1}"`
-      );
-      // 将驼峰转换为中划线
-      // svgText = svgText.replace(/([A-Z])/g, "-$1").toLowerCase();
-      console.log(svgText);
+      const result = previewSVG.findSVGInDoc(doc, position.line);
+      if (!result) {
+        return;
+      }
+      const { svgText, startLine, endLine, startIndex, endIndex } = result;
+
       const hoverRange = new vscode.Range(
         new vscode.Position(startLine, startIndex),
         new vscode.Position(endLine, endIndex)
@@ -130,13 +217,11 @@ export function activate(context: vscode.ExtensionContext) {
             `![SVG](data:image/svg+xml,${encodeURIComponent(svgText)})`
           ),
         ],
+        // 鼠标识别出的 svg 范围
         range: hoverRange,
       };
     },
   });
-
-  context.subscriptions.push(previewSVGFile);
-  context.subscriptions.push(previewSelectionSVG);
 }
 
 // This method is called when your extension is deactivated

@@ -2,7 +2,8 @@
   "name": "previewsvg",
   "displayName": "PreviewSVG",
   "description": "preview svg",
-  "version": "0.0.2",
+  "version": "0.0.3",
+  "license": "MIT",
   "publisher": "panjy",
   "author": "panjy",
   "repository": "https://github.com/pan-jy/previewSVG",
@@ -25,8 +26,8 @@
         "title": "Preview SVG File"
       },
       {
-        "command": "previewsvg.previewSelectionSVG",
-        "title": "Preview Selection SVG"
+        "command": "previewsvg.previewActiveSVG",
+        "title": "Preview Active SVG"
       }
     ],
     "menus": {
@@ -36,7 +37,7 @@
           "when": "resourceExtname == .svg || resourceExtname == .tsx"
         },
         {
-          "command": "previewsvg.previewSelectionSVG",
+          "command": "previewsvg.previewActiveSVG",
           "when": "resourceExtname == .svg || resourceExtname == .tsx"
         }
       ]
