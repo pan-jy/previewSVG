@@ -16,7 +16,11 @@
   ],
   "activationEvents": [
     "onLanguage:typescriptreact",
-    "onLanguage:xml"
+    "onLanguage:javascriptreact",
+    "onLanguage:xml",
+    "onLanguage:vue",
+    "onLanguage:vue-html",
+    "onLanguage:html"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -34,11 +38,11 @@
       "editor/context": [
         {
           "command": "previewsvg.previewSVGFile",
-          "when": "resourceExtname == .svg || resourceExtname == .tsx"
+          "when": "resourceExtname == .jsx || resourceExtname == .tsx || resourceExtname == .svg || resourceExtname == .vue || resourceExtname == .html"
         },
         {
           "command": "previewsvg.previewActiveSVG",
-          "when": "resourceExtname == .svg || resourceExtname == .tsx"
+          "when": "resourceExtname == .jsx || resourceExtname == .tsx || resourceExtname == .svg || resourceExtname == .vue || resourceExtname == .html"
         }
       ]
     }
