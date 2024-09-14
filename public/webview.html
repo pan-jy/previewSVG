@@ -158,14 +158,25 @@
       let animationId = null;
       let lastTime, isMagnify;
       const scaleAnimation = (timestamp) => {
-        if (isMagnify && magnifyBtn.disabled) return;
-        if (!isMagnify && shrinkBtn.disabled) return;
+        if (
+          (isMagnify && magnifyBtn.disabled) ||
+          (!isMagnify && shrinkBtn.disabled)
+        ) {
+          clearAnimation();
+          return;
+        }
         if (!lastTime) lastTime = timestamp;
         const deltaTime = timestamp - lastTime;
-        const scale = curScale + (isMagnify ? 0.1 : -0.1) * deltaTime * 0.0001;
+        const scale = curScale + (isMagnify ? 0.1 : -0.1) * deltaTime * 0.001;
         handleScale(scale);
 
         animationId = requestAnimationFrame(scaleAnimation);
+      };
+
+      const clearAnimation = () => {
+        lastTime = null;
+        clearTimeout(timer);
+        cancelAnimationFrame(animationId);
       };
 
       // 放大
@@ -179,10 +190,7 @@
           animationId = requestAnimationFrame(scaleAnimation);
         }, 500);
       });
-      magnifyBtn.addEventListener("mouseup", () => {
-        clearTimeout(timer);
-        cancelAnimationFrame(animationId);
-      });
+      magnifyBtn.addEventListener("mouseup", clearAnimation);
 
       // 缩小
       shrinkBtn.addEventListener("click", () => {
@@ -194,10 +202,7 @@
           animationId = requestAnimationFrame(scaleAnimation);
         }, 500);
       });
-      shrinkBtn.addEventListener("mouseup", () => {
-        clearTimeout(timer);
-        cancelAnimationFrame(animationId);
-      });
+      shrinkBtn.addEventListener("mouseup", clearAnimation);
 
       // 重置大小
       resetSizeBtn.addEventListener("click", () => {
