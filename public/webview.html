@@ -110,6 +110,7 @@
 
     <section id="svg-container">{{svg}}</section>
     <script>
+      // 背景色相关
       const colorInput = document.getElementById("colorInput");
       const svgContainer = document.getElementById("svg-container");
       const resetColorBtn = document.getElementById("resetColorBtn");
@@ -131,32 +132,81 @@
       const resetSizeBtn = document.getElementById("resetSizeBtn");
       const SVGElem = svgContainer.querySelector("svg");
 
+      // 缩放相关
       let curScale = 1;
+      const handleScale = (scale) => {
+        scale = parseFloat(scale.toFixed(6)); // 保留六位小数
+        if (curScale === scale) return;
+        else if (curScale < scale) {
+          if (shrinkBtn.disabled) shrinkBtn.disabled = false;
+          if (scale >= 5) {
+            magnifyBtn.disabled = true;
+            return;
+          }
+        } else {
+          if (magnifyBtn.disabled) magnifyBtn.disabled = false;
+          if (scale <= 0.1) {
+            shrinkBtn.disabled = true;
+            return;
+          }
+        }
+        curScale = scale;
+        SVGElem.style.transform = `scale(${curScale})`;
+        svgContainer.style.height = `${height * curScale}px`;
+      };
+
+      let animationId = null;
+      let lastTime, isMagnify;
+      const scaleAnimation = (timestamp) => {
+        if (
+          (isMagnify && magnifyBtn.disabled) ||
+          (!isMagnify && shrinkBtn.disabled)
+        ) {
+          clearAnimation();
+          return;
+        }
+        if (!lastTime) lastTime = timestamp;
+        const deltaTime = timestamp - lastTime;
+        const scale = curScale + (isMagnify ? 0.1 : -0.1) * deltaTime * 0.001;
+        handleScale(scale);
+
+        animationId = requestAnimationFrame(scaleAnimation);
+      };
+
+      const clearAnimation = () => {
+        lastTime = null;
+        clearTimeout(timer);
+        cancelAnimationFrame(animationId);
+      };
+
+      // 放大
+      let timer = null;
       magnifyBtn.addEventListener("click", () => {
-        curScale += 0.1;
-        SVGElem.style.transform = `scale(${curScale})`;
-        svgContainer.style.height = `${height * curScale}px`;
-        if (shrinkBtn.disabled) shrinkBtn.disabled = false;
-        if (curScale === 2) {
-          magnifyBtn.disabled = true;
-        }
+        handleScale(curScale + 0.1);
       });
+      magnifyBtn.addEventListener("mousedown", () => {
+        timer = setTimeout(() => {
+          isMagnify = true;
+          animationId = requestAnimationFrame(scaleAnimation);
+        }, 500);
+      });
+      magnifyBtn.addEventListener("mouseup", clearAnimation);
 
+      // 缩小
       shrinkBtn.addEventListener("click", () => {
-        curScale -= 0.1;
-        curScale = Math.max(0.1, curScale);
-        SVGElem.style.transform = `scale(${curScale})`;
-        svgContainer.style.height = `${height * curScale}px`;
-        if (magnifyBtn.disabled) magnifyBtn.disabled = false;
-        if (curScale === 0.1) {
-          shrinkBtn.disabled = true;
-        }
+        handleScale(curScale - 0.1);
       });
+      shrinkBtn.addEventListener("mousedown", () => {
+        isMagnify = false;
+        timer = setTimeout(() => {
+          animationId = requestAnimationFrame(scaleAnimation);
+        }, 500);
+      });
+      shrinkBtn.addEventListener("mouseup", clearAnimation);
 
+      // 重置大小
       resetSizeBtn.addEventListener("click", () => {
-        curScale = 1;
-        SVGElem.style.transform = `scale(${curScale})`;
-        svgContainer.style.height = `${height}px`;
+        handleScale(1);
       });
     </script>
   </body>
