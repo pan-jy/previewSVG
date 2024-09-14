@@ -38,7 +38,7 @@
       "editor/context": [
         {
           "command": "previewsvg.previewSVGFile",
-          "when": "resourceExtname == .jsx || resourceExtname == .tsx || resourceExtname == .svg || resourceExtname == .vue || resourceExtname == .html"
+          "when": "resourceExtname == .svg"
         },
         {
           "command": "previewsvg.previewActiveSVG",
